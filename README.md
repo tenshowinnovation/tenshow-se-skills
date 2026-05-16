@@ -12,7 +12,7 @@ This repository follows the open **Agent Skills specification**: <https://agents
 
 ## 仓库结构 / Repository Layout
 
-```
+```text
 tenshow-se-skills/
 ├── README.md                  # this file
 └── expo-mobile-dev/           # skill: end-to-end Expo + React Native mobile development

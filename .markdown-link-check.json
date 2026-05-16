@@ -6,7 +6,8 @@
     { "pattern": "^https://dev\\.mi\\.com/console" },
     { "pattern": "^https://open\\.oppomobile\\.com" },
     { "pattern": "^https://dev\\.vivo\\.com\\.cn" },
-    { "pattern": "^https://wikinew\\.open\\.qq\\.com" }
+    { "pattern": "^https://wikinew\\.open\\.qq\\.com" },
+    { "pattern": "^https://tenshowinnovation\\.com" }
   ],
   "replacementPatterns": [],
   "httpHeaders": [

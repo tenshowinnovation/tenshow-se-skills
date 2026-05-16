@@ -31,7 +31,7 @@ Cloudflare Workers is the deployment target because:
 
 ### File layout
 
-```
+```text
 my-app/
 ├── app/
 │   ├── (tabs)/
@@ -106,7 +106,7 @@ This eliminates whole categories of API drift bugs.
 
 ### Deploying to Cloudflare Workers
 
-Expo's server export adapter handles the build. The exact command set is evolving — **always check the current [Expo API Routes deployment docs](https://docs.expo.dev/router/reference/api-routes/) and the [Hono Cloudflare Workers guide](https://hono.dev/getting-started/cloudflare-workers) before deploying**.
+Expo's server export adapter handles the build. The exact command set is evolving — **always check the current [Expo API Routes deployment docs](https://docs.expo.dev/router/web/api-routes/) and the [Hono Cloudflare Workers guide](https://hono.dev/getting-started/cloudflare-workers) before deploying**.
 
 High-level workflow (verify each step against current docs):
 
@@ -150,7 +150,7 @@ So the China stack splits the repo: the Expo app stays in its directory, and the
 
 ### File layout (pnpm monorepo)
 
-```
+```text
 my-app/                           # repo root
 ├── pnpm-workspace.yaml
 ├── package.json                  # root, with workspaces
@@ -369,7 +369,7 @@ When starting backend work, walk through this:
 Keep these handy — backend tooling is the part of the stack that changes fastest:
 
 - **Hono** — https://hono.dev/
-- **Expo API Routes** — https://docs.expo.dev/router/reference/api-routes/
+- **Expo API Routes** — https://docs.expo.dev/router/web/api-routes/
 - **Cloudflare Workers + Hono** — https://hono.dev/getting-started/cloudflare-workers
 - **wrangler CLI** — https://developers.cloudflare.com/workers/wrangler/
 - **better-auth + Hono** — https://www.better-auth.com/docs (search "Hono")

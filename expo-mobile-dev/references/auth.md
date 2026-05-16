@@ -21,7 +21,7 @@ Email-based login is the international norm and is uncommon in mainland China co
 
 Architecture:
 
-```
+```text
 ┌───────────────────────────┐         ┌────────────────────────────┐
 │  Expo app                 │         │  Auth server               │
 │  • @better-auth/expo      │ HTTPS   │  • better-auth             │
@@ -107,7 +107,7 @@ pnpm tsx scripts/generate-apple-client-secret.ts
 
 Output (a long JWT):
 
-```
+```text
 APPLE_CLIENT_SECRET:
 eyJhbGciOiJFUzI1NiIsImtpZCI6IlhZWjc4OTAxMjMifQ.eyJpc3MiOi...
 ```
@@ -249,7 +249,7 @@ Library docs: https://react-native-google-signin.github.io/
 
 Add to Google Cloud's OAuth client allowed redirect URIs:
 
-```
+```text
 https://<your-auth-server-domain>/api/auth/callback/google
 ```
 
@@ -265,7 +265,7 @@ The simplest of the three social providers.
 
 1. Create an OAuth App at https://github.com/settings/developers
 2. Set the **Authorization callback URL** to your server's callback path:
-   ```
+   ```text
    https://<your-auth-server-domain>/api/auth/callback/github
    ```
 3. Generate a client secret in the OAuth App settings.

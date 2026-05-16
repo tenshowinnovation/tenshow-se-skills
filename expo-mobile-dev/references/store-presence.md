@@ -31,7 +31,7 @@ When asked to populate a field, the workflow is:
 
 ### File layout
 
-```
+```text
 my-app/
 ├── store.config.json        # the EAS Metadata config (or .ts for typed editing)
 ├── assets/store/

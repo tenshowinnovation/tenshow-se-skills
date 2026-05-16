@@ -1,10 +1,15 @@
 {
-  // Relaxed defaults — skill docs are long-form reference material, not blog posts.
-  // We care about structural correctness, not aesthetic conformance.
+  // Relaxed defaults — skill docs are long-form reference material consumed
+  // mostly by LLMs. We care about structural correctness (right code-block
+  // language for syntax highlighting, frontmatter parsing) over whitespace
+  // aesthetics that don't affect rendering or LLM parsing.
   "config": {
     "default": true,
     "MD013": false,           // line-length: skill docs use long sentences intentionally
     "MD024": { "siblings_only": true }, // duplicate headings OK if in different sections
+    "MD026": { "punctuation": ".,;!" }, // allow `:` and `?` in headings (we use "Setup flow:" intros and "What is X?" questions)
+    "MD031": false,           // blanks around fenced code: pure style, LLMs ignore whitespace
+    "MD032": false,           // blanks around lists: same — pure style
     "MD033": false,           // inline HTML: tables sometimes need it
     "MD034": false,           // bare URLs OK in reference tables
     "MD036": false,           // emphasis as heading: used for "IMPORTANT" callouts
@@ -12,6 +17,9 @@
     "MD046": { "style": "fenced" }, // code blocks must be fenced
     "MD049": { "style": "asterisk" },
     "MD050": { "style": "asterisk" }
+    // MD040 (fenced code language) deliberately stays ENABLED — language tags
+    // matter for syntax highlighting in rendered docs and for agents
+    // distinguishing bash vs json vs ts blocks.
   },
   "ignores": [
     "node_modules/**",
