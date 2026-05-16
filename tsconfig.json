@@ -1,0 +1,52 @@
+{
+  // Root tsconfig for type-checking the repo's TypeScript files:
+  //   - tests/static/check-orphans.ts          (orphan + frontmatter validator)
+  //   - tests/workflow/run.ts                   (workflow test runner)
+  //   - expo-mobile-dev/assets/*.ts             (scripts bundled into the skill)
+  //
+  // Execution is via `tsx` (no build step). `noEmit: true` makes that explicit.
+  // Use `moduleResolution: "Bundler"` because tsx resolves like a bundler —
+  // no need for explicit `.js` extensions on relative imports.
+  "compilerOptions": {
+    // ─── Runtime target ────────────────────────────────────────────────────
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+
+    // ─── Module system ─────────────────────────────────────────────────────
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+
+    // ─── Type checking ─────────────────────────────────────────────────────
+    // Strict mode plus a few extras that catch real bugs without being noisy.
+    // Intentionally NOT enabling `noUncheckedIndexedAccess` — it adds friction
+    // for array/object indexing patterns common in small scripts. Re-evaluate
+    // if the codebase grows.
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // ─── Build behavior ────────────────────────────────────────────────────
+    "noEmit": true,
+    "skipLibCheck": true,
+
+    // ─── Editor / IDE friendliness ─────────────────────────────────────────
+    "incremental": false
+  },
+  "include": [
+    "tests/**/*.ts",
+    "expo-mobile-dev/assets/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests/**/.report",
+    "tests/workflow/**/workspace"
+  ]
+}

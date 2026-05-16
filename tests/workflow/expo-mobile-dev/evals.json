@@ -1,0 +1,260 @@
+{
+  "skill_name": "expo-mobile-dev",
+  "schema_version": 1,
+  "description": "Workflow tests for the expo-mobile-dev skill. Each scenario runs the prompt through `claude -p` with the skill loaded, captures stdout, then evaluates the assertions.",
+  "assertion_types": {
+    "contains": "substring must appear in transcript (case-sensitive by default)",
+    "contains_ci": "substring must appear, case-insensitive",
+    "matches": "regex must match transcript at least once",
+    "absent": "substring must NOT appear in transcript",
+    "absent_ci": "substring must NOT appear, case-insensitive"
+  },
+  "scenarios": [
+    {
+      "id": "international",
+      "title": "International scaffold — happy path",
+      "prompt": "I want to build a fitness tracking app called FitTrail for global users. It's a workout logger with social features. Please scaffold it.",
+      "expected_region": "international",
+      "assertions": [
+        {
+          "name": "asks-the-three-step1-questions",
+          "type": "matches",
+          "value": "(name|名字).*(purpose|用途|做什么).*(region|地区|国内|海外|international|China)",
+          "rationale": "Step 1 of the skill explicitly requires asking name, purpose, and region before any tool calls."
+        },
+        {
+          "name": "uses-pinned-sdk-55-scaffold-command",
+          "type": "contains",
+          "value": "pnpm create expo-app",
+          "rationale": "Must use pnpm + the create-expo-app scaffolder."
+        },
+        {
+          "name": "pins-sdk-55-template",
+          "type": "contains",
+          "value": "--template default@sdk-55",
+          "rationale": "SDK version is pinned in Step 2; the agent must not drift."
+        },
+        {
+          "name": "installs-better-auth-stack",
+          "type": "contains",
+          "value": "better-auth",
+          "rationale": "Core auth library from Step 3."
+        },
+        {
+          "name": "installs-better-auth-i18n",
+          "type": "contains",
+          "value": "@better-auth/i18n",
+          "rationale": "i18n plugin installs in both regions — required for localized error codes."
+        },
+        {
+          "name": "installs-expo-apple-authentication",
+          "type": "contains",
+          "value": "expo-apple-authentication",
+          "rationale": "Required for both regions per Step 3."
+        },
+        {
+          "name": "installs-google-signin-for-international",
+          "type": "contains",
+          "value": "@react-native-google-signin/google-signin",
+          "rationale": "International-only native module — must be installed here."
+        },
+        {
+          "name": "installs-tanstack-query-and-form",
+          "type": "matches",
+          "value": "@tanstack/react-query.*@tanstack/react-form|@tanstack/react-form.*@tanstack/react-query",
+          "rationale": "Both TanStack packages in the opinionated stack."
+        },
+        {
+          "name": "installs-zod-and-form-adapter",
+          "type": "matches",
+          "value": "zod.*@tanstack/zod-form-adapter|@tanstack/zod-form-adapter.*zod",
+          "rationale": "Form validation stack added in the latest revision."
+        },
+        {
+          "name": "uses-expo-updates-not-pushy",
+          "type": "contains",
+          "value": "expo-updates",
+          "rationale": "International OTA library."
+        },
+        {
+          "name": "installs-eas-update-insights-skill",
+          "type": "contains",
+          "value": "eas-update-insights",
+          "rationale": "International OTA skill — Step 4."
+        },
+        {
+          "name": "no-pushy-or-react-native-update",
+          "type": "absent",
+          "value": "react-native-update",
+          "rationale": "China-only OTA library — should NOT appear for international."
+        },
+        {
+          "name": "no-wechat-mention",
+          "type": "absent_ci",
+          "value": "wechat",
+          "rationale": "WeChat is China-only. Should not be pushed on international builds."
+        },
+        {
+          "name": "no-icp-mention",
+          "type": "absent",
+          "value": "ICP",
+          "rationale": "ICP 备案 is China-only regulatory requirement."
+        },
+        {
+          "name": "mentions-cloudflare-or-expo-api-routes-for-backend",
+          "type": "matches",
+          "value": "(Cloudflare Workers|Expo API Routes|app/api)",
+          "rationale": "International backend architecture from references/backend.md."
+        }
+      ]
+    },
+    {
+      "id": "china",
+      "title": "中国大陆 scaffold — happy path",
+      "prompt": "我要做一个国内的 app，叫腾秀，是公司内部使用的项目管理工具。帮我搭一下。",
+      "expected_region": "china",
+      "assertions": [
+        {
+          "name": "asks-the-three-step1-questions",
+          "type": "matches",
+          "value": "(name|名字).*(purpose|用途|做什么).*(region|地区|国内|海外|international|China)",
+          "rationale": "Same Step 1 requirement applies regardless of region."
+        },
+        {
+          "name": "uses-pinned-sdk-55-scaffold-command",
+          "type": "contains",
+          "value": "pnpm create expo-app",
+          "rationale": "Same scaffold command for both regions."
+        },
+        {
+          "name": "installs-better-auth-stack",
+          "type": "contains",
+          "value": "better-auth",
+          "rationale": "Auth library installed in both regions; WeChat is layered on top via custom provider."
+        },
+        {
+          "name": "installs-better-auth-i18n",
+          "type": "contains",
+          "value": "@better-auth/i18n",
+          "rationale": "i18n plugin is essential for a Chinese-language app — error codes must render in Chinese."
+        },
+        {
+          "name": "installs-expo-apple-authentication",
+          "type": "contains",
+          "value": "expo-apple-authentication",
+          "rationale": "Required for BOTH regions — iOS App Store China region also requires Apple Sign-In."
+        },
+        {
+          "name": "skips-google-signin-for-china",
+          "type": "absent",
+          "value": "@react-native-google-signin/google-signin",
+          "rationale": "Google Sign-In silently fails on Chinese Android phones without GMS — must be skipped."
+        },
+        {
+          "name": "uses-phone-number-as-primary-login",
+          "type": "matches",
+          "value": "(phoneNumber|手机号|phone[- ]number|SMS.*OTP|SMS.*验证码|短信验证码)",
+          "rationale": "China builds must use phone-number + SMS code as the primary login, not email."
+        },
+        {
+          "name": "mentions-sms-provider",
+          "type": "matches",
+          "value": "(火山引擎.*SMS|阿里云.*SMS|@volcengine|@alicloud/dysmsapi)",
+          "rationale": "A specific Chinese SMS provider must be selected — generic 'SMS provider' isn't actionable."
+        },
+        {
+          "name": "uses-react-native-update-not-expo-updates",
+          "type": "contains",
+          "value": "react-native-update",
+          "rationale": "China OTA library is Pushy / react-native-update."
+        },
+        {
+          "name": "mentions-pushy-or-its-url",
+          "type": "matches",
+          "value": "(Pushy|pushy\\.reactnative\\.cn)",
+          "rationale": "Pushy is the OTA service backend; must surface name or URL."
+        },
+        {
+          "name": "installs-react-native-update-skill",
+          "type": "contains",
+          "value": "reactnativecn/react-native-update-skill",
+          "rationale": "China-specific OTA skill from Step 4."
+        },
+        {
+          "name": "no-eas-update-insights-for-china",
+          "type": "absent",
+          "value": "eas-update-insights",
+          "rationale": "International OTA skill — should NOT appear for China."
+        },
+        {
+          "name": "mentions-icp-beian",
+          "type": "matches",
+          "value": "(ICP|备案)",
+          "rationale": "ICP 备案 is required for distribution in mainland Android stores."
+        },
+        {
+          "name": "mentions-separate-apps-api-directory",
+          "type": "matches",
+          "value": "(apps/api|separate.*director|单独.*目录)",
+          "rationale": "China backend lives in a separate apps/api/ directory per backend.md."
+        },
+        {
+          "name": "no-cloudflare-workers-for-china",
+          "type": "absent_ci",
+          "value": "cloudflare workers",
+          "rationale": "CF Workers is not viable for mainland China — explicitly warned against in backend.md."
+        },
+        {
+          "name": "mentions-chinese-cloud-with-volcano-first",
+          "type": "matches",
+          "value": "(火山引擎|Volcano Engine|VeFaaS)",
+          "rationale": "China backend deployment should default to 火山引擎 (primary) per backend.md. If this fails but `mentions-chinese-cloud-fallback` passes, the agent picked a fallback instead of the primary — flag for review."
+        },
+        {
+          "name": "mentions-chinese-cloud-fallback",
+          "type": "matches",
+          "value": "(火山引擎|Volcano Engine|VeFaaS|阿里云|Alibaba Cloud)",
+          "rationale": "Loose check — 火山引擎 (primary) or 阿里云 (fallback) is at least preferable to CF Workers. The primary check above enforces 火山引擎 first. 腾讯云 / 华为云 are out of scope."
+        }
+      ]
+    },
+    {
+      "id": "dual-region",
+      "title": "Dual-region — ambiguity handling",
+      "prompt": "我需要做一个 app，需要同时支持国内和海外用户。",
+      "expected_region": "dual",
+      "assertions": [
+        {
+          "name": "does-not-silently-pick-one-region",
+          "type": "absent",
+          "value": "scaffolding now",
+          "rationale": "Agent should not commit to one region without acknowledging dual-region. (Loose heuristic; review qualitatively.)"
+        },
+        {
+          "name": "acknowledges-dual-region-explicitly",
+          "type": "matches",
+          "value": "(dual|both region|两个|国内.*海外|海外.*国内|two builds|两个 build)",
+          "rationale": "Agent must surface that this is a two-build scenario, not one binary serving both."
+        },
+        {
+          "name": "mentions-app-region-env-var-pattern",
+          "type": "matches",
+          "value": "(APP_REGION|app\\.config|two bundle ID|两个 bundle)",
+          "rationale": "The dual-region pattern from china-deployment.md uses APP_REGION env var to switch."
+        },
+        {
+          "name": "references-china-deployment-doc",
+          "type": "matches",
+          "value": "(china-deployment|china_deployment|china deployment)",
+          "rationale": "Should point user at the relevant reference file for the China path."
+        },
+        {
+          "name": "asks-which-region-to-start-with",
+          "type": "matches",
+          "value": "(which.*first|先做哪|start with|先从)",
+          "rationale": "Either explain dual-region OR ask which to do first. Either is acceptable; this assertion accepts the 'ask' path."
+        }
+      ]
+    }
+  ]
+}

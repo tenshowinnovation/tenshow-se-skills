@@ -1,0 +1,21 @@
+{
+  // Relaxed defaults — skill docs are long-form reference material, not blog posts.
+  // We care about structural correctness, not aesthetic conformance.
+  "config": {
+    "default": true,
+    "MD013": false,           // line-length: skill docs use long sentences intentionally
+    "MD024": { "siblings_only": true }, // duplicate headings OK if in different sections
+    "MD033": false,           // inline HTML: tables sometimes need it
+    "MD034": false,           // bare URLs OK in reference tables
+    "MD036": false,           // emphasis as heading: used for "IMPORTANT" callouts
+    "MD041": false,           // first line doesn't need to be a top-level heading (frontmatter)
+    "MD046": { "style": "fenced" }, // code blocks must be fenced
+    "MD049": { "style": "asterisk" },
+    "MD050": { "style": "asterisk" }
+  },
+  "ignores": [
+    "node_modules/**",
+    "tests/**/.report/**",
+    "tests/workflow/**/workspace/**"
+  ]
+}

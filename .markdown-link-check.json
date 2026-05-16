@@ -1,0 +1,23 @@
+{
+  "ignorePatterns": [
+    { "pattern": "^https://developer\\.apple\\.com/account" },
+    { "pattern": "^https://appstoreconnect\\.apple\\.com" },
+    { "pattern": "^https://developer\\.huawei\\.com/consumer/cn/console" },
+    { "pattern": "^https://dev\\.mi\\.com/console" },
+    { "pattern": "^https://open\\.oppomobile\\.com" },
+    { "pattern": "^https://dev\\.vivo\\.com\\.cn" },
+    { "pattern": "^https://wikinew\\.open\\.qq\\.com" }
+  ],
+  "replacementPatterns": [],
+  "httpHeaders": [
+    {
+      "urls": ["https://github.com/", "https://developer.apple.com/"],
+      "headers": { "Accept": "text/html" }
+    }
+  ],
+  "timeout": "15s",
+  "retryOn429": true,
+  "retryCount": 2,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [200, 206, 301, 302, 304, 308, 403]
+}

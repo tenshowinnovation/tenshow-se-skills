@@ -1,0 +1,25 @@
+# Node / package managers
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Apple Sign-In private keys — NEVER commit
+AuthKey_*.p8
+
+# Env files — secrets live here
+.env
+.env.local
+.env.*.local
+
+# Test outputs
+tests/**/.report/
+tests/workflow/**/workspace/
+tests/workflow/**/.snapshots/
+*.log
