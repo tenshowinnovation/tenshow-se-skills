@@ -1,0 +1,135 @@
+# CI + ClawHub publish for tenshow-se-skills.
+#
+# Three jobs:
+#   1. `test`          — runs on every PR + push. Static checks must pass.
+#   2. `publish-preview` — runs on PRs only. `clawhub sync --dry-run` so reviewers
+#                          can see what would publish without actually publishing.
+#   3. `publish`       — runs only on push to main, gated by test job. Actual
+#                        `clawhub sync` that uploads new/updated skills.
+#
+# Required repository secret (Settings → Secrets and variables → Actions → New):
+#   CLAWHUB_API_KEY — the same token you store locally in .env
+
+name: CI & Publish
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump for sync (patch | minor | major)"
+        required: false
+        default: "patch"
+        type: choice
+        options: [patch, minor, major]
+
+# Cancel in-flight runs on the same ref so a rapid push sequence only publishes
+# the latest commit. Publishing is idempotent in clawhub sync but this saves CI.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+      - name: Run static checks
+        run: pnpm test:static
+
+  publish-preview:
+    name: ClawHub publish — dry run (PR preview)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+      - name: Install clawhub CLI
+        run: npm i -g clawhub
+      - name: Authenticate
+        env:
+          CLAWHUB_API_KEY: ${{ secrets.CLAWHUB_API_KEY }}
+        run: |
+          if [ -z "$CLAWHUB_API_KEY" ]; then
+            echo "::error::CLAWHUB_API_KEY secret is not configured for this repo."
+            echo "Add it via Settings → Secrets and variables → Actions → New repository secret."
+            exit 1
+          fi
+          clawhub login --token "$CLAWHUB_API_KEY" --no-browser
+      - name: Validate token
+        run: clawhub whoami
+      - name: Preview what would publish
+        run: clawhub sync --all --dry-run --bump patch
+
+  publish:
+    name: ClawHub publish
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      || github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Optional: add `environment: production` and configure required reviewers
+    # in repo settings if you want a human gate on every publish.
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+      - name: Install clawhub CLI
+        run: npm i -g clawhub
+      - name: Authenticate
+        env:
+          CLAWHUB_API_KEY: ${{ secrets.CLAWHUB_API_KEY }}
+        run: |
+          if [ -z "$CLAWHUB_API_KEY" ]; then
+            echo "::error::CLAWHUB_API_KEY secret is not configured for this repo."
+            exit 1
+          fi
+          clawhub login --token "$CLAWHUB_API_KEY" --no-browser
+      - name: Validate token
+        run: clawhub whoami
+      - name: Publish new/updated skills
+        env:
+          # Commit message becomes the per-version changelog. Multi-line is fine.
+          COMMIT_MSG: ${{ github.event.head_commit.message || format('Manual publish via workflow_dispatch ({0})', github.sha) }}
+          BUMP: ${{ github.event.inputs.bump || 'patch' }}
+        run: |
+          # Truncate to a reasonable length — changelogs over a few KB get unwieldy.
+          CHANGELOG="$(printf '%s' "$COMMIT_MSG" | head -c 2000)"
+          clawhub sync --all --bump "$BUMP" --changelog "$CHANGELOG"
+      - name: Summary
+        run: |
+          echo "### ClawHub publish complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Bump: \`${{ github.event.inputs.bump || 'patch' }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"

@@ -160,12 +160,21 @@ The runner auto-discovers any `tests/workflow/<name>/evals.json` whose `<name>` 
 
 ## CI
 
-These tests are designed to run in CI but split smartly:
+Wired via [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). Three jobs:
 
-- **On every PR**: `pnpm test:static` (fast, free, deterministic)
-- **On manual trigger or nightly**: `pnpm test:workflow` (expensive, slow, non-deterministic — needs `ANTHROPIC_API_KEY` env in the CI runner)
+| Job | Triggers | What it does |
+|---|---|---|
+| `test` | every PR + push to `main` + manual dispatch | Runs `pnpm test:static`. Gates the publish jobs. |
+| `publish-preview` | PRs only | `clawhub sync --dry-run` so reviewers see what would publish. |
+| `publish` | push to `main` + manual dispatch | `clawhub sync` actual publish. Uses commit message as the per-version changelog; default bump is `patch` (override on manual dispatch). |
 
-No CI config is committed yet; add a `.github/workflows/test.yml` or equivalent when this repo is hosted somewhere with CI.
+**`pnpm test:workflow` is intentionally NOT in CI** — it's slow (~10 min), expensive (~$2-5/run), and non-deterministic. Run it locally before shipping a skill edit. If you want it in CI later, gate on manual dispatch + add `ANTHROPIC_API_KEY` as a repo secret.
+
+### Required repo secrets
+
+- **`CLAWHUB_API_KEY`** — the publish token. Add via **Settings → Secrets and variables → Actions → New repository secret**.
+
+Without this secret, `publish` and `publish-preview` will fail with a clear error message pointing at this section.
 
 ---
 
