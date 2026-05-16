@@ -9,15 +9,21 @@
     "test:workflow": "tsx tests/workflow/run.ts",
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#tests/**/.report\"",
     "lint:links": "find . -name '*.md' -not -path './node_modules/*' -not -path './tests/**/.report/*' -print0 | xargs -0 -I {} markdown-link-check --quiet --config .markdown-link-check.json {}",
-    "lint:frontmatter": "tsx tests/static/check-orphans.ts"
+    "lint:frontmatter": "tsx tests/static/check-orphans.ts",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "**/*.md": "markdown-link-check --quiet --config .markdown-link-check.json"
   },
   "devDependencies": {
+    "@types/node": "^24.10.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.4",
     "markdown-link-check": "^3.13.0",
     "markdownlint-cli2": "^0.18.0",
     "tsx": "^4.20.0",
     "typescript": "^5.6.0",
-    "yaml": "^2.6.0",
-    "@types/node": "^24.10.5"
+    "yaml": "^2.6.0"
   },
   "packageManager": "pnpm@11.0.0",
   "engines": {

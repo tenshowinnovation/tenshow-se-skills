@@ -24,3 +24,6 @@ tests/**/.report/
 tests/workflow/**/workspace/
 tests/workflow/**/.snapshots/
 *.log
+
+# Husky internals — only commit our own hook scripts in .husky/, not the runtime
+.husky/_/

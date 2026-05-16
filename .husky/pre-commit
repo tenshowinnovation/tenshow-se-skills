@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+# Pre-commit hook for tenshow-se-skills.
+#
+# Runs markdown-link-check (via lint-staged) on every staged .md file.
+# Configured in package.json under "lint-staged".
+#
+# Why: catches dead external URLs before they land in a commit. LLMs
+# occasionally hallucinate URLs (especially version-specific docs that have
+# moved); checking at commit time means the model still has the surrounding
+# context and can fix the URL before the commit completes.
+#
+# To bypass for an exceptional case (e.g., network unavailable):
+#   git commit --no-verify
+#
+# Performance: only staged files are checked, so a typical doc edit runs in
+# 3-8 seconds depending on how many external URLs the file contains.
+# If a check fails because the network blipped (not because the URL is dead),
+# just retry — markdown-link-check has built-in retry on 429.
+
+pnpm exec lint-staged
