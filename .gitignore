@@ -1,6 +1,7 @@
 # Node / package managers
+# pnpm-lock.yaml IS committed — needed for reproducible installs in CI.
+# Other lockfiles are excluded so accidental npm/yarn use doesn't leak in.
 node_modules/
-pnpm-lock.yaml
 package-lock.json
 yarn.lock
 
