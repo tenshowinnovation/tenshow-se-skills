@@ -42,6 +42,7 @@
   },
   "include": [
     "tests/**/*.ts",
+    "scripts/**/*.ts",
     "expo-mobile-dev/assets/**/*.ts"
   ],
   "exclude": [

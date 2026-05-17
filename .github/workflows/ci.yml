@@ -17,13 +17,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      bump:
-        description: "Version bump for sync (patch | minor | major)"
-        required: false
-        default: "patch"
-        type: choice
-        options: [patch, minor, major]
+    # No inputs — version bumps live in each SKILL.md's `metadata.version`,
+    # not in CI dispatch options. Manual dispatch just re-runs the same
+    # publish logic the push trigger does.
 
 # Cancel in-flight runs on the same ref so a rapid push sequence only publishes
 # the latest commit. Publishing is idempotent in clawhub sync but this saves CI.
@@ -82,7 +78,10 @@ jobs:
       - name: Validate token
         run: clawhub whoami
       - name: Preview what would publish
-        run: clawhub sync --all --dry-run --bump patch
+        # `clawhub sync` has no --owner flag and so can't manage org-owned
+        # skills. Custom script wraps `clawhub skill publish` per-skill with
+        # the right owner and reads versions from each SKILL.md frontmatter.
+        run: pnpm exec tsx scripts/publish-skills.ts --dry-run
 
   publish:
     name: ClawHub publish
@@ -119,17 +118,25 @@ jobs:
       - name: Validate token
         run: clawhub whoami
       - name: Publish new/updated skills
+        # Versions are read from each SKILL.md's `metadata.version`. The script:
+        #   - skips skills already at the current local version on the registry
+        #     (idempotent — CI re-runs on the same commit are no-ops)
+        #   - publishes when local version > registry version (a version bump)
+        #   - errors when local < registry (someone shipped a regression)
+        # The legacy `bump` workflow_dispatch input is no longer consulted;
+        # version bumps belong in SKILL.md, not in CI dispatch options.
         env:
           # Commit message becomes the per-version changelog. Multi-line is fine.
           COMMIT_MSG: ${{ github.event.head_commit.message || format('Manual publish via workflow_dispatch ({0})', github.sha) }}
-          BUMP: ${{ github.event.inputs.bump || 'patch' }}
         run: |
-          # Truncate to a reasonable length — changelogs over a few KB get unwieldy.
           CHANGELOG="$(printf '%s' "$COMMIT_MSG" | head -c 2000)"
-          clawhub sync --all --bump "$BUMP" --changelog "$CHANGELOG"
+          pnpm exec tsx scripts/publish-skills.ts --changelog "$CHANGELOG"
       - name: Summary
+        if: always()
         run: |
-          echo "### ClawHub publish complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "### ClawHub publish step" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Bump: \`${{ github.event.inputs.bump || 'patch' }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Owner: tenshowinnovation" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "See the 'Publish new/updated skills' step above for per-skill decisions." >> "$GITHUB_STEP_SUMMARY"

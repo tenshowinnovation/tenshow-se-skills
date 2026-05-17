@@ -165,8 +165,8 @@ Wired via [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). Three jobs:
 | Job | Triggers | What it does |
 |---|---|---|
 | `test` | every PR + push to `main` + manual dispatch | Runs `pnpm test:static`. Gates the publish jobs. |
-| `publish-preview` | PRs only | `clawhub sync --dry-run` so reviewers see what would publish. |
-| `publish` | push to `main` + manual dispatch | `clawhub sync` actual publish. Uses commit message as the per-version changelog; default bump is `patch` (override on manual dispatch). |
+| `publish-preview` | PRs only | `scripts/publish-skills.ts --dry-run` — prints per-skill decision (publish / skip / regression) without uploading. |
+| `publish` | push to `main` + manual dispatch | `scripts/publish-skills.ts` actual publish, owner = `tenshowinnovation`. Versions come from each `SKILL.md`'s `metadata.version`; commit message becomes the changelog. Idempotent — CI re-runs on the same commit are no-ops. |
 
 **`pnpm test:workflow` is intentionally NOT in CI** — it's slow (~10 min), expensive (~$2-5/run), and non-deterministic. Run it locally before shipping a skill edit. If you want it in CI later, gate on manual dispatch + add `ANTHROPIC_API_KEY` as a repo secret.
 
