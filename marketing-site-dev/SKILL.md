@@ -20,6 +20,32 @@ End-to-end skill for building and shipping a bilingual static company marketing 
 
 ---
 
+## Is this skill the right fit?
+
+This is a **deliberately opinionated** workflow optimized for one specific scenario. Before going deep, check that scenario actually matches the user's situation. If it doesn't, surface the better alternative instead of forcing the user through a heavier path.
+
+**Use this skill when:**
+
+- The site is for a **Chinese company or a product targeting users in mainland China** — latency from mainland to non-Chinese CDNs is bad enough (200-400ms, often worse during peak hours) that visitors notice and bounce.
+- **ICP 备案 is required or already in hand** — distributing in China legally needs the filing tied to a domain hosted on a Chinese cloud. Volcengine bundles 备案 assistance and offers it for the domain you deploy here.
+- The user is already in the Volcengine ecosystem (other Volcengine services, existing TOS buckets, etc.) and consolidation is valuable.
+- The bilingual zh/en pattern is desired — the content layer (`site.ts`) is designed around it.
+
+**Use a simpler alternative when:**
+
+| Scenario | Recommended alternative | Why |
+|---|---|---|
+| **Personal site / portfolio / side project, no Chinese audience requirement** | **GitHub Pages** | Free, auto-HTTPS, deploys on `git push`, no infra to manage. Zero of the Volcengine landmines apply. |
+| **International-only audience (US/EU/SEA), no China presence planned** | **Vercel** (or Cloudflare Pages / Netlify) | Free tier, instant deploys from git, preview URLs per PR, automatic HTTPS, global edge network. Skip the whole `ve` CLI + ICP workflow entirely. |
+| **Site needs serverless functions (forms, auth, dynamic content)** | **Vercel** or **Cloudflare Pages** with their edge functions | This skill ships purely static — Volcengine has serverless products, but the workflow here doesn't cover them. |
+| **You want preview URLs per branch / PR-based review** | **Vercel** | Vercel's preview-URL UX is best-in-class. This skill produces one production deploy per push; no branch previews. |
+
+If the user's situation matches the "use a simpler alternative" column, **tell them so explicitly** before scaffolding anything. A 2-minute Vercel deploy is a better experience than a 30-minute Volcengine bootstrap when the user doesn't need what Volcengine provides. Don't sunk-cost them into the wrong stack because they invoked this skill.
+
+When in doubt, ask: "Will mainland-China users be a meaningful part of your audience, and do you have (or plan to file) ICP 备案 for the domain?" If both answers are no, point at Vercel / GitHub Pages and stop.
+
+---
+
 ## Step 1: Capture intent (ALWAYS ASK FIRST)
 
 Don't write any code until you have these six inputs from the user. If they're missing from the prompt, ask via `AskUserQuestion`. Most teams will have everything except possibly the public-security number — that one is OK as a placeholder.
