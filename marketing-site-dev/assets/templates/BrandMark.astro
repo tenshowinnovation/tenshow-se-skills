@@ -1,0 +1,36 @@
+---
+interface Props {
+  size?: number;
+  inverted?: boolean;
+  class?: string;
+}
+
+const { size = 32, inverted = false, class: className = '' } = Astro.props;
+
+const blueDark = inverted ? '#ffffff' : '#072AC8';
+const blueLight = inverted ? '#ffffff' : '#1E96FC';
+const cutout = inverted ? '#0a0a0a' : '#ffffff';
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="60 70 145 130"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  class={className}
+  aria-hidden="true"
+>
+  <path
+    d="M102.285 190.504L86.9922 170.113L113.33 120.835H165.157L128.624 189.654L102.285 190.504Z"
+    fill={blueLight}
+  ></path>
+  <path
+    d="M170.256 77.5039L197.443 114.038L179.601 140.376H154.537L141.066 120.651L99.5566 97.4189L113.331 120.835L103.136 140.376H95.8828L70 102.992L87.8418 77.5039H170.256Z"
+    fill={blueDark}
+  ></path>
+  <path
+    d="M82.7441 120.835L98.887 97.0454H184.699L167.706 120.835H140.876L115.03 170.113H86.9923L113.331 120.835H82.7441Z"
+    fill={cutout}
+  ></path>
+</svg>

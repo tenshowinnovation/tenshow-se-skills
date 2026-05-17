@@ -26,6 +26,7 @@ tenshow-se-skills/
 | Skill | 用途 / Purpose |
 |---|---|
 | [`expo-mobile-dev`](expo-mobile-dev/SKILL.md) | 全流程的 React Native + Expo 移动应用开发：scaffold、装包、装 AI 辅助 skill、按国内外区域配置部署与 OTA。End-to-end Expo mobile development covering scaffolding, opinionated package install (better-auth, TanStack Query/Form, Zustand, sonner-native, zod), AI-development skill provisioning, and region-aware (中国大陆 / international) deployment + OTA strategy. |
+| [`marketing-site-dev`](marketing-site-dev/SKILL.md) | 全流程的双语（中/英）公司营销官网开发与火山引擎部署：Astro 6 + React 19 islands + Tailwind 4 构建，TOS + CDN + 免费 DV 证书 + HTTPS/HSTS/HTTP2 一键脚本化部署。Bilingual (zh/en) static marketing site workflow — Astro/React/Tailwind build + Volcengine TOS/CDN/cert/HTTPS-hardening deploy, all scripted via `ve` CLI + Node SDK (with SigV4 escape hatch for actions `ve` doesn't ship). |
 
 更多 skills 会陆续添加 / More skills will be added over time.
 
