@@ -10,16 +10,27 @@ A skill is a directory containing a `SKILL.md` (YAML frontmatter + Markdown inst
 
 This repository follows the open **Agent Skills specification**: <https://agentskills.io/specification>
 
-## 仓库结构 / Repository Layout
+## Quick Start / 快速安装
 
-```text
-tenshow-se-skills/
-├── README.md                  # this file
-└── expo-mobile-dev/           # skill: end-to-end Expo + React Native mobile development
-    ├── SKILL.md
-    ├── assets/                # scripts & templates referenced by the skill
-    └── references/            # deep-dive docs loaded on demand
+Install any skill from this repo via either CLI — the same slug works for both:
+
+```bash
+# OpenClaw
+openclaw skills install <skill-name>
+
+# Or, via npx (no global install needed)
+npx skills add <skill-name>
 ```
+
+Example — installing the screenshots skill:
+
+```bash
+openclaw skills install expo-app-store-screenshots
+# or
+npx skills add expo-app-store-screenshots
+```
+
+Available skill names: see the table below.
 
 ## 当前 Skills / Current Skills
 
