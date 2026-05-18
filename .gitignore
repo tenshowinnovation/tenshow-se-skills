@@ -27,3 +27,11 @@ tests/workflow/**/.snapshots/
 
 # Husky internals — only commit our own hook scripts in .husky/, not the runtime
 .husky/_/
+
+# Python (app-store-screenshots upload helpers)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Captured screenshots from local testing of app-store-screenshots
+screenshots/
