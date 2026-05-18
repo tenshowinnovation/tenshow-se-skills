@@ -210,7 +210,7 @@ Before clicking "Submit for Review" on any store:
 - [ ] Support URL + marketing URL hosted and reachable
 - [ ] Pricing tier set
 - [ ] Build selected and processed (not "still processing")
-- [ ] Review notes include demo account credentials if any feature requires login
+- [ ] Review notes include demo account credentials if any feature requires login — for phone-OTP-only apps, this means a fixed-phone + fixed-OTP bypass wired into `sendOTP` (see [auth.md → 应用商店审核账号](auth.md#%E5%BA%94%E7%94%A8%E5%95%86%E5%BA%97%E5%AE%A1%E6%A0%B8%E8%B4%A6%E5%8F%B7-app-store-reviewer-account))
 - [ ] For China: ICP 备案号, 软著, 营业执照, 版号 (if applicable) all uploaded to each Android store
 - [ ] `eas metadata:lint` passes (international) and the file is committed
 

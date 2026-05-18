@@ -439,6 +439,76 @@ SMS costs real money per send (火山引擎 charges ~¥0.04 per domestic SMS as 
 
 This is configured in the route handler in front of the `phoneNumber` plugin, not inside it.
 
+### 应用商店审核账号 (App Store reviewer account)
+
+If phone-number OTP is the only login your app offers, **you cannot ship without a reviewer bypass**. Apple App Review and Google Play (and every Chinese Android store) ask for demo credentials in App Review Information / 测试账号. A reviewer in Cupertino or 深圳 cannot receive your real SMS, so without a backdoor of some kind, they will reject the build at first launch and your release slips by a week.
+
+The pattern: a single **fixed phone + fixed OTP**, gated by env vars, with the bypass living inside `sendOTP` itself.
+
+```ts
+// apps/api/src/auth.ts
+const REVIEW_PHONE = process.env.REVIEW_PHONE;        // e.g. "+8613800138000"
+const REVIEW_OTP = process.env.REVIEW_OTP ?? "123456";
+
+phoneNumber({
+  phoneNumberValidator: (n) => /^\+86(1[3-9]\d{9})$/.test(n),
+  sendOTP: async ({ phoneNumber, code }, ctx) => {
+    if (REVIEW_PHONE && phoneNumber === REVIEW_PHONE && ctx) {
+      // Overwrite the verification row that better-auth just created with our fixed code,
+      // then return without calling the SMS provider.
+      await ctx.context.internalAdapter.updateVerificationByIdentifier(phoneNumber, {
+        value: `${REVIEW_OTP}:0`,
+      });
+      return;
+    }
+    await sendSmsViaVolcEngine({ to: phoneNumber, templateParams: { code }, /* ... */ });
+  },
+})
+```
+
+How it works: when the `/phone-number/send-otp` endpoint runs, better-auth (a) generates a random OTP, (b) writes a row to the `verification` table keyed by the phone number, **then** (c) calls your `sendOTP`. By the time `sendOTP` runs, the row already exists — overwriting it with the fixed code is enough to make the subsequent `/phone-number/verify` accept the reviewer's input. The default verify path runs unchanged, so security is *not* bypassed globally — only the SMS-delivery step is skipped for one specific phone number.
+
+#### Gotchas — none of these are documented in better-auth
+
+1. **The `:0` suffix is mandatory.** better-auth stores `${code}:${attempts}` (verify splits on `:` and increments the attempt counter on each wrong guess). If you write just `"123456"`, the split returns `["123456", undefined]` and downstream comparisons go sideways. Always emit `${REVIEW_OTP}:0`.
+2. **The verification identifier is the raw phone number.** Not `sign-in-otp-<phone>`, not `phone-${phone}`. Just the E.164 string the user typed.
+3. **`sendOTP` is the only place to do this.** It's the one hook where you have ctx access *after* the row is created and *before* the user can attempt to verify. Don't try `callbackOnVerification` (too late) or a custom `verifyOTP` (forces you to reimplement the entire verify flow, including attempt counting and expiry).
+4. **`internalAdapter` is not part of the public API.** Read the current source before relying on the call shape — `node_modules/better-auth/dist/db/internal-adapter.mjs` (`updateVerificationByIdentifier`) and `dist/plugins/phone-number/routes.mjs` (the `:0` storage format). These have shifted across minor versions of better-auth and may again.
+
+#### Test phone number choice
+
+Use **`+8613800138000`**. It's a well-known China Mobile test prefix that:
+
+- Passes the typical `/^\+86(1[3-9]\d{9})$/` validator (no need to relax production input validation to admit the reviewer's number).
+- Is not assigned to any real subscriber, so there's no risk of leaking a real user's phone into review notes.
+- Is recognizable to Chinese-speaking reviewers as a synthetic number — they won't try to validate it through other channels.
+
+For international stores, pick anything that passes your validator and isn't in active use; the principle is the same.
+
+#### What to put in App Store Connect / Play Console
+
+Under **App Review Information → Sign-in required** (or 应用宝/华为/小米的"测试账号" field):
+
+| Field | Value |
+|---|---|
+| Phone | `+86 138 0013 8000` |
+| OTP | `123456` |
+| Notes (EN) | *App uses Chinese phone-number OTP login. Enter the phone above, tap "Send code", then enter the fixed test code `123456`. No SMS is actually sent to this test number — it is a synthetic reviewer account.* |
+| Notes (中文) | *测试账号使用固定验证码 `123456`，不会真实下发短信。* |
+
+Always include the English **and** Chinese note — Apple reviews for the China App Store are done in either language depending on the reviewer, and Chinese Android stores universally expect Chinese.
+
+#### Security cautions
+
+- **Env vars only.** `REVIEW_PHONE` and `REVIEW_OTP` go in your secret store (EAS Secret / hosting provider env / `.env` gitignored). Never commit, never hardcode.
+- **Rotate `REVIEW_OTP` to something non-obvious before going live.** The bypass is scoped to one phone number, so the worst case is one compromised account — but defense in depth costs nothing here. `123456` is fine for local dev; for production try a random 6-digit string the team agrees on out-of-band.
+- **Verify the negative path on every release.** Run `curl -X POST .../phone-number/verify -d '{"phoneNumber":"+8613800138000","code":"000000"}'` — it must return `INVALID_OTP`. If it returns success, your bypass is accidentally accepting any code, which means verification is silently broken for *all* users, not just the reviewer.
+- **Leave the bypass `REVIEW_PHONE` blank in dev environments** unless you actively need it. The whole feature is opt-in: with no `REVIEW_PHONE` set, the conditional short-circuits and the original `sendOTP` path runs unchanged.
+
+#### Alternative: a real SIM (no backdoor)
+
+If your app's threat model forbids any auth bypass — e.g., financial, healthcare, anything storing 实名 data — provision a real phone number you control and pass the OTP to reviewers via App Review Information's free-form notes when they request it. The trade-off: someone on your team has to be reachable during the entire review window (and every re-review), which is painful across timezones. For most consumer apps the env-gated fixed-OTP pattern is the right call; for regulated apps, eat the operational cost.
+
 ---
 
 ## Localized error responses (`@better-auth/i18n`)
