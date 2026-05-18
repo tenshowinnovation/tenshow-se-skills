@@ -12,14 +12,15 @@ This repository follows the open **Agent Skills specification**: <https://agents
 
 ## Quick Start / 快速安装
 
-Install any skill from this repo via either CLI — the same slug works for both:
+Two install paths, depending on which registry / CLI your agent uses:
 
 ```bash
-# OpenClaw
+# OpenClaw — pulls from the ClawHub registry (slug is globally unique)
 openclaw skills install <skill-name>
 
-# Or, via npx (no global install needed)
-npx skills add <skill-name>
+# Vercel agent-skills CLI (npx) — pulls from GitHub, needs <owner>/<repo>
+# plus the skill subdirectory name, since this is a multi-skill repo
+npx skills add tenshowinnovation/tenshow-se-skills <skill-name>
 ```
 
 Example — installing the screenshots skill:
@@ -27,7 +28,7 @@ Example — installing the screenshots skill:
 ```bash
 openclaw skills install expo-app-store-screenshots
 # or
-npx skills add expo-app-store-screenshots
+npx skills add tenshowinnovation/tenshow-se-skills expo-app-store-screenshots
 ```
 
 Available skill names: see the table below.
