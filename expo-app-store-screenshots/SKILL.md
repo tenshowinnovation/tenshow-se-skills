@@ -6,7 +6,7 @@ compatibility: Designed for Claude Code and compatible agents. Requires macOS fo
 metadata:
   author: "北京腾秀创智技术有限公司 (Tenshow Innovation)"
   organization: tenshowinnovation.com
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # App Store / Google Play Screenshots
@@ -42,27 +42,30 @@ screenshots/<locale>/<device>/NN-<device>-<screen>.png
 | `ipad`          | 2064×2752     | App Store 13" display. iPad Pro 13" M4 captures natively at this size.                   |
 | `android-phone` | 1440×3120     | Google Play phone (9:19.5). Pixel 7+/8+/9 Pro class captures natively.                   |
 
-For other targets, look up the current Apple / Google specs and pass the size through to `scripts/resize.sh`.
+For other targets, look up the current Apple / Google specs and pass the size through to `assets/resize.sh`.
 
-## Scripts (all live under `scripts/`)
+## Scripts (all live under `assets/`)
 
-| Script                                                       | Purpose                                                                          |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| [`scripts/detect-app-config.sh`](scripts/detect-app-config.sh)   | Discover `APP_SCHEME`, `IOS_BUNDLE_ID`, `ANDROID_PACKAGE` from the Expo config.  |
-| [`scripts/ios-status-bar.sh`](scripts/ios-status-bar.sh)         | Lock / clear the iOS Simulator status bar (9:41, charged, full bars).            |
-| [`scripts/ios-capture.sh`](scripts/ios-capture.sh)               | One screenshot: `openurl` → settle → `simctl io screenshot`.                     |
-| [`scripts/android-status-bar.sh`](scripts/android-status-bar.sh) | Enter / exit Android system UI demo mode (clean clock, battery, signal).         |
-| [`scripts/android-capture.sh`](scripts/android-capture.sh)       | One screenshot: `am start` deep link → settle → `screencap` + `adb pull`.        |
-| [`scripts/resize.sh`](scripts/resize.sh)                         | Batch resize a directory of PNGs to a target `WxH`, idempotent.                  |
-| [`scripts/write-summary.sh`](scripts/write-summary.sh)           | Write `summary.md` into a device folder (model, OS, resolution, screen list).    |
-| [`scripts/upload-app-store.py`](scripts/upload-app-store.py)     | Upload one (locale, device) folder to App Store Connect via the API.             |
-| [`scripts/upload-play-store.py`](scripts/upload-play-store.py)   | Upload one (locale, image-type) folder to Google Play via the Publisher API.     |
+| Script                                                                                       | Purpose                                                                                                  |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [`assets/detect-app-config.sh`](assets/detect-app-config.sh)                 | Discover `APP_SCHEME`, `IOS_BUNDLE_ID`, `ANDROID_PACKAGE` from the Expo config.                          |
+| [`assets/detect-routes.sh`](assets/detect-routes.sh)                         | Walk an Expo Router `app/` (or `src/app/`) tree and print every route as `<url>\t<group>\t<source-file>`. |
+| [`assets/ios-status-bar.sh`](assets/ios-status-bar.sh)                       | Lock / clear the iOS Simulator status bar (9:41, charged, full bars).                                    |
+| [`assets/ios-capture.sh`](assets/ios-capture.sh)                             | One screenshot: `openurl` → settle → `simctl io screenshot`.                                             |
+| [`assets/android-status-bar.sh`](assets/android-status-bar.sh)               | Enter / exit Android system UI demo mode (clean clock, battery, signal).                                 |
+| [`assets/android-capture.sh`](assets/android-capture.sh)                     | One screenshot: `am start` deep link → settle → `screencap` + `adb pull`.                                |
+| [`assets/resize.sh`](assets/resize.sh)                                       | Batch resize a directory of PNGs to a target `WxH`, idempotent.                                          |
+| [`assets/write-summary.sh`](assets/write-summary.sh)                         | Write `summary.md` into a device folder (model, OS, resolution, screen list).                            |
+| [`assets/upload-app-store.py`](assets/upload-app-store.py)                   | Upload one (locale, device) folder to App Store Connect via the API.                                     |
+| [`assets/upload-play-store.py`](assets/upload-play-store.py)                 | Upload one (locale, image-type) folder to Google Play via the Publisher API.                             |
 
 Each script accepts `-h`-style usage on bad input. Read the file headers for full arg lists.
 
 ## How to drive the skill
 
 Capture runs in **three phases**: phase 1 takes the unauth screens (`sign-in`, `sign-up`, etc.) while the demo account is signed *out*, then you manually sign in across all devices, then phase 2 takes the auth-required screens. This avoids round-tripping through the sign-in flow during automation and keeps both states clean.
+
+Script paths in the bash blocks below are written relative to the skill root (`assets/...`). Resolve them to wherever your agent installed the skill before running.
 
 1. **Pre-flight**
    - Build & install the app on the target sim/device (a release-style build looks best).
@@ -76,12 +79,20 @@ Capture runs in **three phases**: phase 1 takes the unauth screens (`sign-in`, `
 
 2. **Discover app identity**
    ```bash
-   eval "$(bash .claude/skills/expo-app-store-screenshots/scripts/detect-app-config.sh path/to/app)"
+   eval "$(bash assets/detect-app-config.sh path/to/app)"
    echo "$APP_SCHEME $ANDROID_PACKAGE"
    ```
    If detection fails (custom config plugin, monorepo quirks), set the three env vars by hand.
 
 3. **Split screens by auth state.** Two bash arrays of `NN slug deep-path` rows. The `NN` ordering keeps both arrays disjoint so filenames sort correctly together.
+
+   > **For Expo Router projects only**: rather than guessing deep-link paths from memory, dump every route under `app/` (or `src/app/`) first so you don't miss anything the team added since the last screenshot pass:
+   > ```bash
+   > bash assets/detect-routes.sh path/to/app
+   > # TSV: <url-path>\t<group>\t<source-file>
+   > ```
+   > Expo Router collapses `(group)` segments out of the user-visible URL — `app/(auth)/sign-in.tsx` deep-links as `/sign-in`. The `(group)` column is a useful auth-state hint (`(auth)`, `(app)`, `(tabs)` usually gate; `(public)`, `(onboarding)` usually don't), but confirm against the matching `_layout.tsx` where redirect logic actually lives. For non-Expo-Router apps, read the project's own router config.
+
    ```bash
    UNAUTH_SCREENS=(
      "01 sign-in  /sign-in"
@@ -100,13 +111,12 @@ Capture runs in **three phases**: phase 1 takes the unauth screens (`sign-in`, `
 
 4. **Set up — lock status bars on all devices once.** Persists across app launches and across both phases.
    ```bash
-   SCRIPTS=.claude/skills/expo-app-store-screenshots/scripts
    LOCALE=en-US
    IPHONE_UDID=<...>; IPAD_UDID=<...>   # `xcrun simctl list devices` to find them
 
-   bash "$SCRIPTS/ios-status-bar.sh"     "$IPHONE_UDID"
-   bash "$SCRIPTS/ios-status-bar.sh"     "$IPAD_UDID"
-   bash "$SCRIPTS/android-status-bar.sh" enter
+   bash assets/ios-status-bar.sh     "$IPHONE_UDID"
+   bash assets/ios-status-bar.sh     "$IPAD_UDID"
+   bash assets/android-status-bar.sh enter
 
    capture_set() {
      local udid="$1" device="$2" platform="$3"; shift 3
@@ -114,9 +124,9 @@ Capture runs in **three phases**: phase 1 takes the unauth screens (`sign-in`, `
        read -r nn slug path <<<"$row"
        local out="screenshots/$LOCALE/$device/$nn-$device-$slug.png"
        if [[ "$platform" == ios ]]; then
-         bash "$SCRIPTS/ios-capture.sh"     "$udid" "$APP_SCHEME://$path" "$out"
+         bash assets/ios-capture.sh     "$udid" "$APP_SCHEME://$path" "$out"
        else
-         bash "$SCRIPTS/android-capture.sh" "$APP_SCHEME://$path" "$out" "$ANDROID_PACKAGE"
+         bash assets/android-capture.sh "$APP_SCHEME://$path" "$out" "$ANDROID_PACKAGE"
        fi
      done
    }
@@ -140,22 +150,22 @@ Capture runs in **three phases**: phase 1 takes the unauth screens (`sign-in`, `
 
 8. **Resize & verify.** iPad is already 2064×2752 native, no resize needed.
    ```bash
-   bash "$SCRIPTS/resize.sh" "screenshots/$LOCALE/iphone"        1284x2778
-   bash "$SCRIPTS/resize.sh" "screenshots/$LOCALE/android-phone" 1440x3120
+   bash assets/resize.sh "screenshots/$LOCALE/iphone"        1284x2778
+   bash assets/resize.sh "screenshots/$LOCALE/android-phone" 1440x3120
 
    identify "screenshots/$LOCALE/iphone"/*.png        # expect 1284x2778
    identify "screenshots/$LOCALE/ipad"/*.png          # expect 2064x2752
    identify "screenshots/$LOCALE/android-phone"/*.png # expect 1440x3120
 
-   bash "$SCRIPTS/android-status-bar.sh" exit         # release demo mode
+   bash assets/android-status-bar.sh exit         # release demo mode
    ```
 
 9. **Per-device summary.** Drop a `summary.md` into each device folder so reviewers and future-you can tell at a glance which hardware/OS produced these and which screen each PNG corresponds to. Run after step 8 so the recorded resolution reflects the resized output.
    ```bash
    ALL_SCREENS=( "${UNAUTH_SCREENS[@]}" "${AUTH_SCREENS[@]}" )
-   bash "$SCRIPTS/write-summary.sh" ios     "$IPHONE_UDID" "screenshots/$LOCALE/iphone"        "$LOCALE" "${ALL_SCREENS[@]}"
-   bash "$SCRIPTS/write-summary.sh" ios     "$IPAD_UDID"   "screenshots/$LOCALE/ipad"          "$LOCALE" "${ALL_SCREENS[@]}"
-   bash "$SCRIPTS/write-summary.sh" android -              "screenshots/$LOCALE/android-phone" "$LOCALE" "${ALL_SCREENS[@]}"
+   bash assets/write-summary.sh ios     "$IPHONE_UDID" "screenshots/$LOCALE/iphone"        "$LOCALE" "${ALL_SCREENS[@]}"
+   bash assets/write-summary.sh ios     "$IPAD_UDID"   "screenshots/$LOCALE/ipad"          "$LOCALE" "${ALL_SCREENS[@]}"
+   bash assets/write-summary.sh android -              "screenshots/$LOCALE/android-phone" "$LOCALE" "${ALL_SCREENS[@]}"
    ```
    The script auto-detects model + OS from `simctl`/`adb` and reads the resolution off any PNG already in the folder. Pass `-` for the Android target when only one device/emulator is attached, otherwise pass the serial.
 
@@ -177,7 +187,7 @@ export ASC_KEY_ID=ABC1234567
 export ASC_ISSUER_ID=11111111-2222-3333-4444-555555555555
 export ASC_KEY_PATH=$HOME/.appstoreconnect/AuthKey_ABC1234567.p8
 
-UPLOAD=.claude/skills/expo-app-store-screenshots/scripts/upload-app-store.py
+UPLOAD=assets/upload-app-store.py
 APP_ID=1234567890
 
 # en-US (BCP-47 == ASC code), iPhone + iPad
@@ -205,7 +215,7 @@ pip install google-auth requests
 
 export PLAY_CREDENTIALS=$HOME/.gcloud/play-service-account.json
 
-UPLOAD=.claude/skills/expo-app-store-screenshots/scripts/upload-play-store.py
+UPLOAD=assets/upload-play-store.py
 PKG=$ANDROID_PACKAGE   # e.g. com.example.myapp (use detect-app-config.sh to populate)
 
 python3 "$UPLOAD" --package "$PKG" --locale en-US --image-type phoneScreenshots --dir screenshots/en-US/android-phone
