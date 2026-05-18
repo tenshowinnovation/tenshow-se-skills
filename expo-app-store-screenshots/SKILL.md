@@ -1,5 +1,5 @@
 ---
-name: app-store-screenshots
+name: expo-app-store-screenshots
 description: Capture and prepare App Store / Google Play screenshots for any React Native / Expo app. Drives iOS Simulator and Android device/emulator via deep links, locks the status bar to a clean marketing state, captures the standard set of screens per locale, and resizes to store-target dimensions. Use when the user asks to (re)generate or refresh store screenshots, add a new locale, add a new screen, or upload screenshots to App Store Connect or Google Play. Also trigger for adjacent phrasing like "marketing screenshots", "store listing screenshots", "screen capture for the app stores", or when the user mentions `xcrun simctl`, `adb screencap`, or paths like `screenshots/<locale>/<device>/`.
 license: MIT
 compatibility: Designed for Claude Code and compatible agents. Requires macOS for iOS capture (Xcode CLI / `xcrun simctl`). Android capture needs Android Platform Tools (`adb`) and an attached device or running emulator. Resize step needs ImageMagick 7+ (`magick`). Detection helper uses `jq` and optionally `npx expo` for `app.config.{ts,js}` projects. Upload helpers need Python 3.9+ with `requests`, `pyjwt[crypto]` (App Store Connect) and `google-auth` (Google Play).
@@ -76,7 +76,7 @@ Capture runs in **three phases**: phase 1 takes the unauth screens (`sign-in`, `
 
 2. **Discover app identity**
    ```bash
-   eval "$(bash .claude/skills/app-store-screenshots/scripts/detect-app-config.sh path/to/app)"
+   eval "$(bash .claude/skills/expo-app-store-screenshots/scripts/detect-app-config.sh path/to/app)"
    echo "$APP_SCHEME $ANDROID_PACKAGE"
    ```
    If detection fails (custom config plugin, monorepo quirks), set the three env vars by hand.
@@ -100,7 +100,7 @@ Capture runs in **three phases**: phase 1 takes the unauth screens (`sign-in`, `
 
 4. **Set up — lock status bars on all devices once.** Persists across app launches and across both phases.
    ```bash
-   SCRIPTS=.claude/skills/app-store-screenshots/scripts
+   SCRIPTS=.claude/skills/expo-app-store-screenshots/scripts
    LOCALE=en-US
    IPHONE_UDID=<...>; IPAD_UDID=<...>   # `xcrun simctl list devices` to find them
 
@@ -177,7 +177,7 @@ export ASC_KEY_ID=ABC1234567
 export ASC_ISSUER_ID=11111111-2222-3333-4444-555555555555
 export ASC_KEY_PATH=$HOME/.appstoreconnect/AuthKey_ABC1234567.p8
 
-UPLOAD=.claude/skills/app-store-screenshots/scripts/upload-app-store.py
+UPLOAD=.claude/skills/expo-app-store-screenshots/scripts/upload-app-store.py
 APP_ID=1234567890
 
 # en-US (BCP-47 == ASC code), iPhone + iPad
@@ -205,7 +205,7 @@ pip install google-auth requests
 
 export PLAY_CREDENTIALS=$HOME/.gcloud/play-service-account.json
 
-UPLOAD=.claude/skills/app-store-screenshots/scripts/upload-play-store.py
+UPLOAD=.claude/skills/expo-app-store-screenshots/scripts/upload-play-store.py
 PKG=$ANDROID_PACKAGE   # e.g. com.example.myapp (use detect-app-config.sh to populate)
 
 python3 "$UPLOAD" --package "$PKG" --locale en-US --image-type phoneScreenshots --dir screenshots/en-US/android-phone
