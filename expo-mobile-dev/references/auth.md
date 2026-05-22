@@ -372,6 +372,16 @@ import { phoneNumber } from "better-auth/plugins";
 import { sendSmsViaVolcEngine } from "./sms";  // your provider wrapper
 
 export const auth = betterAuth({
+  rateLimit: {
+    enabled: process.env.NODE_ENV === "production",
+    window: 60,
+    max: 100,
+    storage: "database",
+    customRules: {
+      "/phone-number/send-otp": { window: 60, max: 1 },
+      "/phone-number/verify": { window: 60, max: 5 },
+    },
+  },
   plugins: [
     phoneNumber({
       sendOTP: async ({ phoneNumber, code }) => {
@@ -381,7 +391,6 @@ export const auth = betterAuth({
           templateParams: { code },
         });
       },
-      // optional: rate-limit per phone number to prevent abuse
       otpLength: 6,
       expiresIn: 300, // 5 minutes
     }),
@@ -429,7 +438,20 @@ const { data, error } = await verifyOTP({
 
 Cross-check the current `@better-auth/expo` client API before copying — method names and shapes have shifted between minor versions.
 
-### Rate limiting + abuse prevention
+### Rate limiting
+
+Configure Better Auth's built-in `rateLimit` on the auth server before enabling phone-number OTP in production. The current Better Auth docs cover the top-level `rateLimit` option, path-specific `customRules`, IP header detection, storage choices, and 429 handling: <https://better-auth.com/docs/concepts/rate-limit>.
+
+For phone OTP, the minimum path-specific rules are:
+
+- `/phone-number/send-otp` — 1 request per IP per minute
+- `/phone-number/verify` — 5 attempts per IP per minute
+
+Use durable storage for production (`storage: "database"` or `storage: "secondary-storage"`). Better Auth's default in-memory store is not enough for serverless or multi-instance deployments because each runtime keeps its own counters. If you choose `storage: "database"`, run Better Auth's migration/generation flow so the `rateLimit` table exists before deploy. If you deploy behind Cloudflare, 火山引擎 API Gateway, 阿里云 API Gateway, or another proxy, also configure the trusted IP header (`cf-connecting-ip`, gateway client-IP header, etc.) through `advanced.ipAddress.ipAddressHeaders`; otherwise every user may appear to come from the proxy.
+
+Better Auth's built-in limiter is IP-based and applies to client-initiated requests only. Server-side `auth.api` calls are not rate-limited by it, so backend jobs and test helpers still need their own guardrails if they can trigger OTP sends.
+
+### SMS abuse prevention
 
 SMS costs real money per send (火山引擎 charges ~¥0.04 per domestic SMS as of 2026). Without rate limiting, an attacker can drain your account or DDoS your users via SMS bombing. Minimum:
 
@@ -437,7 +459,7 @@ SMS costs real money per send (火山引擎 charges ~¥0.04 per domestic SMS as 
 - Cap to N OTPs per IP per minute (~3-5)
 - Require client-side CAPTCHA (火山引擎 / 阿里云 each ship a CAPTCHA product) before the first OTP request from any new IP
 
-This is configured in the route handler in front of the `phoneNumber` plugin, not inside it.
+The per-IP rules belong in Better Auth `rateLimit.customRules`. The per-phone quotas should live in your SMS wrapper or the route handler in front of `phoneNumber`, because Better Auth's global limiter keys primarily on the connecting IP rather than the `phoneNumber` request body. Do not rely on the SMS provider's quota alone; provider-side limits usually trigger after the billable send attempt or are too coarse for product UX.
 
 ### 应用商店审核账号 (App Store reviewer account)
 
