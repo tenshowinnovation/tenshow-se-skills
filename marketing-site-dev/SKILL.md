@@ -1,8 +1,8 @@
 ---
 name: marketing-site-dev
-description: Opinionated end-to-end workflow for shipping a bilingual (中文/English) static company marketing site to Volcengine — Astro 6 + React 19 islands + Tailwind 4, deployed to TOS + CDN with HTTPS, force-redirect, HSTS, and HTTP/2, entirely via the `ve` CLI and Node SDKs. Use whenever the user mentions building, scaffolding, deploying, or updating a company / brand / product / 公司官网 / 营销网站 / 品牌站 / marketing site, ESPECIALLY when Volcengine (火山引擎), TOS, CDN, ICP 备案, or Chinese deployment is involved. Also trigger when the user provides a company brief with product list + brand assets and asks for a "single command deploy" or "production-ready landing page", or references files like `astro.config.mjs`, `deploy.config.mjs`, `scripts/cdn-setup.mjs`, `scripts/setup-bucket.mjs`. Prefer this skill over generic web-dev guidance whenever the target deployment is Volcengine + China mainland.
+description: Opinionated end-to-end workflow for shipping a bilingual (中文/English) static company marketing site to Volcengine — Astro 6 + React 19 islands + Tailwind 4, deployed to TOS + CDN with HTTPS, force-redirect, HSTS, and HTTP/2, entirely via the `ve` CLI and Node SDKs, with the Astro agent skill installed after dependencies so future sessions have framework-specific guidance loaded. Use whenever the user mentions building, scaffolding, deploying, or updating a company / brand / product / 公司官网 / 营销网站 / 品牌站 / marketing site, ESPECIALLY when Volcengine (火山引擎), TOS, CDN, ICP 备案, or Chinese deployment is involved. Also trigger when the user provides a company brief with product list + brand assets and asks for a "single command deploy" or "production-ready landing page", or references files like `astro.config.mjs`, `deploy.config.mjs`, `scripts/cdn-setup.mjs`, `scripts/setup-bucket.mjs`. Prefer this skill over generic web-dev guidance whenever the target deployment is Volcengine + China mainland.
 license: MIT
-compatibility: Designed for Claude Code and compatible agents. Requires Node.js 22+, pnpm 10+, the Volcengine `ve` CLI (1.0.x+), and network access to npm + Volcengine OpenAPI. Domain must already be ICP-filed and ideally hosted on Volcengine DNS. macOS / Linux recommended.
+compatibility: Designed for Claude Code and compatible agents. Requires Node.js 22+, pnpm 10+, the Volcengine `ve` CLI (1.0.x+), and network access to npm, GitHub, and Volcengine OpenAPI. Domain must already be ICP-filed and ideally hosted on Volcengine DNS. macOS / Linux recommended.
 metadata:
   author: "北京腾秀创智技术有限公司 (Tenshow Innovation)"
   organization: tenshowinnovation.com
@@ -70,11 +70,16 @@ Optionally:
 Full details in [references/phase-1-static-site.md](references/phase-1-static-site.md). The shortlist:
 
 1. **Scaffold** — copy [`assets/templates/package.json`](assets/templates/package.json) and [`assets/templates/astro.config.mjs`](assets/templates/astro.config.mjs) into the project root. Update `name` in package.json and `site` in astro.config.mjs.
-2. **Install** — `pnpm install`.
-3. **Create the source tree** matching the layout in [phase-1-static-site.md](references/phase-1-static-site.md) (`src/content/site.ts`, `src/components/`, `src/layouts/BaseLayout.astro`, `src/pages/index.astro`, `src/pages/en/index.astro`, `src/styles/global.css`).
-4. **Extract the brand mark** from the user's SVG — use [`assets/templates/BrandMark.astro`](assets/templates/BrandMark.astro) as a starting point. The last 3 `<path>` elements of the short-logo SVG are the mark; copy them verbatim and pick fills from the brand palette.
-5. **Build the sections** — Hero (with the exact recipe in [phase-1-static-site.md](references/phase-1-static-site.md) — grid background + radial glow + gradient headline + status pill + 2 CTAs), About, Products, Focus, Updates, Contact, Footer. Header sticky, mobile menu = the only React island.
-6. **Verify locally** — `pnpm dev` to develop, `pnpm build && pnpm preview` to sanity-check the static output before touching infra.
+2. **Install packages** — `pnpm install`.
+3. **Install the Astro agent skill** — only after `pnpm install` succeeds:
+   ```bash
+   npx skills add https://github.com/astrolicious/agent-skills --skill astro
+   ```
+   If the skill install fails, continue the site build and note the failure for the user to retry later; don't block the workflow on it.
+4. **Create the source tree** matching the layout in [phase-1-static-site.md](references/phase-1-static-site.md) (`src/content/site.ts`, `src/components/`, `src/layouts/BaseLayout.astro`, `src/pages/index.astro`, `src/pages/en/index.astro`, `src/styles/global.css`).
+5. **Extract the brand mark** from the user's SVG — use [`assets/templates/BrandMark.astro`](assets/templates/BrandMark.astro) as a starting point. The last 3 `<path>` elements of the short-logo SVG are the mark; copy them verbatim and pick fills from the brand palette.
+6. **Build the sections** — Hero (with the exact recipe in [phase-1-static-site.md](references/phase-1-static-site.md) — grid background + radial glow + gradient headline + status pill + 2 CTAs), About, Products, Focus, Updates, Contact, Footer. Header sticky, mobile menu = the only React island.
+7. **Verify locally** — `pnpm dev` to develop, `pnpm build && pnpm preview` to sanity-check the static output before touching infra.
 
 ### Stack lock-in (don't deviate)
 
@@ -102,6 +107,7 @@ Full details in [references/phase-2-volcengine-deploy.md](references/phase-2-vol
 
 ```bash
 pnpm install                        # if not done yet
+npx skills add https://github.com/astrolicious/agent-skills --skill astro  # if not done yet
 pnpm build                          # verify local build works
 pnpm run setup:bucket               # idempotent: bucket + website routing + custom-domain binding
 pnpm run deploy:upload              # sync dist/ → bucket

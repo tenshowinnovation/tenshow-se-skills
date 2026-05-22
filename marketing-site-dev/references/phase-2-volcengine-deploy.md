@@ -89,6 +89,7 @@ Uses `volc-api.mjs` (NOT `ve` CLI — must work in CI without the binary). Calls
 
 ```bash
 pnpm install
+npx skills add https://github.com/astrolicious/agent-skills --skill astro
 pnpm build                          # verify build works locally first
 pnpm run setup:bucket               # idempotent: bucket + website + custom domain bind
 pnpm run deploy:upload              # sync dist/ to bucket

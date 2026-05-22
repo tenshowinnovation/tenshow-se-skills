@@ -327,6 +327,58 @@ This skill stops being the primary guide once those specialized skills have some
 
 ---
 
+## 常见问题 / Troubleshooting
+
+### iOS 构建报 `cannot find type 'RCTBridge' in scope`
+
+**现象**:`pnpm run ios` / `expo run:ios` 构建失败,报错指向 `ios/<app>/AppDelegate.swift`:
+
+```
+override func sourceURL(for bridge: RCTBridge) -> URL? {
+                                    ^ cannot find type 'RCTBridge' in scope
+```
+
+**根因**:Expo 模板的 bug(expo/expo#41189),不是项目代码问题。Expo SDK 55 新架构的 `AppDelegate.swift` 模板里有一个 `sourceURL(for bridge: RCTBridge)` override,但 React Native 0.83 已移除旧架构,`RCTBridge` 不再对 Swift 可见,编译即失败。新架构下只需要 `bundleURL()`。
+
+**为什么会突然出现**:`ios/` 目录是 gitignore 的、由 `expo prebuild` 自动生成的(CNG)。任何一次全新 prebuild —— 改造成 monorepo、移动项目目录、升级 SDK —— 都会用 SDK 55 新模板重新生成 `AppDelegate.swift`,把这行有问题的代码带进来。老项目若从未重新生成过此文件就不会触发。
+
+**不要这样修**:
+
+- 直接删 `AppDelegate.swift` 里那行 —— 下次 `expo prebuild` 会重新生成并覆盖掉。
+- 清缓存 / 删 DerivedData —— 缓存不是原因,无效。
+- 改用 `buildReactNativeFromSource` —— 能绕过,但会引入从源码编译 React Native 的额外问题,不推荐。
+
+**正确修法**:用 config plugin 在每次 prebuild 之后自动删除该 override。新建 `plugins/withRemoveRCTBridgeSourceURL.js`:
+
+```js
+const { withAppDelegate } = require("expo/config-plugins");
+
+// RN 0.83 的 bridgeless AppDelegate.swift 模板会 override
+// `sourceURL(for bridge: RCTBridge)`,但 RCTBridge 对 Swift 不可见,
+// 构建会报 "cannot find type 'RCTBridge' in scope"。
+// 新架构下 bundleURL() 已足够。 https://github.com/expo/expo/issues/41189
+const SOURCE_URL_OVERRIDE =
+  /\n[ \t]*override func sourceURL\(for bridge: RCTBridge\) -> URL\? \{[\s\S]*?\n[ \t]*\}\n/;
+
+module.exports = function withRemoveRCTBridgeSourceURL(config) {
+  return withAppDelegate(config, (config) => {
+    if (config.modResults.language === "swift") {
+      config.modResults.contents = config.modResults.contents.replace(
+        SOURCE_URL_OVERRIDE,
+        "\n",
+      );
+    }
+    return config;
+  });
+};
+```
+
+然后在 `app.json` 的 `plugins` 数组里加上 `"./plugins/withRemoveRCTBridgeSourceURL"`,重新跑 `expo prebuild --clean -p ios` 后即可构建。
+
+> 顺带:若 `pod install` 报 `Encoding::CompatibilityError`(CocoaPods 要求 UTF-8),在 shell 里设置 `export LANG=en_US.UTF-8` 即可。
+
+---
+
 ## Reference files
 
 - [references/backend.md](references/backend.md) — API server architecture. Hono is the framework for both regions. International: Hono inside Expo API Routes → Cloudflare Workers. 中国大陆: separate `apps/api/` directory in a pnpm monorepo → 火山引擎 (primary) / 阿里云 (fallback). Includes monorepo layout, skeletons, type-safe `hc` client, validation with `@hono/zod-validator`, auth integration, deploy commands.
