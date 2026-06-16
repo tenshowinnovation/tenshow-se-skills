@@ -1,0 +1,110 @@
+{
+  "skill_name": "volc-tos-storage-domain",
+  "schema_version": 1,
+  "description": "Workflow tests for the volc-tos-storage-domain skill. Each scenario runs the prompt through `claude -p` with the skill loaded, captures stdout, then evaluates the assertions.",
+  "assertion_types": {
+    "contains": "substring must appear in transcript (case-sensitive by default)",
+    "contains_ci": "substring must appear, case-insensitive",
+    "matches": "regex must match transcript at least once",
+    "absent": "substring must NOT appear in transcript",
+    "absent_ci": "substring must NOT appear, case-insensitive"
+  },
+  "scenarios": [
+    {
+      "id": "icp-passed-storage-inaccessible",
+      "title": "ICP passed but storage domain is inaccessible",
+      "prompt": "storage.example.com 备案已经过了，但是还是访问不了。帮我看下对象存储自定义域名要怎么处理。",
+      "expected_region": "volcengine",
+      "assertions": [
+        {
+          "name": "inspects-dns-before-writing",
+          "type": "matches",
+          "value": "(ve dns ListZones|ve dns ListRecords|dig @ns1\\.volcengine-dns\\.com|authoritative DNS|权威 DNS)",
+          "rationale": "The skill requires reading DNS state before changing records."
+        },
+        {
+          "name": "checks-cdn-dcdn-state",
+          "type": "matches",
+          "value": "(ve cdn ListCdnDomains|ve dcdn ListDomainConfig|CDN|DCDN)",
+          "rationale": "The first diagnostic pass should distinguish direct TOS from CDN/DCDN."
+        },
+        {
+          "name": "checks-tos-custom-domain-state",
+          "type": "matches",
+          "value": "(getBucketCustomDomain|getBucketInfo|getBucketAcl|TOS SDK|@volcengine/tos-sdk)",
+          "rationale": "The agent should inspect bucket and custom-domain configuration, not stop at ICP."
+        },
+        {
+          "name": "does-not-say-icp-alone-is-enough",
+          "type": "absent_ci",
+          "value": "备案过了就可以",
+          "rationale": "ICP approval is only a prerequisite; binding, DNS, and HTTPS still matter."
+        }
+      ]
+    },
+    {
+      "id": "ve-lacks-tos",
+      "title": "`ve` has no TOS namespace",
+      "prompt": "我的 ve cli 里面没有 tos 命令，但我想给 storage.example.com 绑定 TOS 桶并申请证书。请列出可执行的 SDK/API/CLI 流程。",
+      "expected_region": "volcengine",
+      "assertions": [
+        {
+          "name": "uses-tos-sdk-for-bucket-custom-domain",
+          "type": "matches",
+          "value": "(@volcengine/tos-sdk|TosClient|putBucketCustomDomain|getBucketCustomDomain)",
+          "rationale": "When `ve tos` is missing, TOS bucket custom-domain APIs must be handled by SDK."
+        },
+        {
+          "name": "uses-ve-for-dns-and-cert-service",
+          "type": "matches",
+          "value": "(ve dns CreateRecord|ve certificateservice QuickApplyCertificate|CertificateGetInstanceList)",
+          "rationale": "`ve` is still useful for DNS and certificate-service APIs."
+        },
+        {
+          "name": "uses-openapi-fallback-for-dcv",
+          "type": "matches",
+          "value": "(CertificateGetDcvParam|2021-06-01|instance_id|@volcengine/openapi)",
+          "rationale": "The DNS validation API may be missing from `ve`; the skill documents the OpenAPI fallback."
+        },
+        {
+          "name": "uses-tos-protocol-not-http",
+          "type": "matches",
+          "value": "Protocol.*tos|tos.*Protocol",
+          "rationale": "The fragile `Protocol` value must be spelled out."
+        }
+      ]
+    },
+    {
+      "id": "direct-tos-vs-cdn",
+      "title": "Direct TOS custom domain versus CDN",
+      "prompt": "storage.example.com 这个对象存储域名是不是一定要接 CDN？我只是想让公开 mp3 和图片能 https 访问。",
+      "expected_region": "volcengine",
+      "assertions": [
+        {
+          "name": "direct-tos-is-valid",
+          "type": "matches",
+          "value": "(direct TOS|直连 TOS|TOS 直连|TOS custom-domain|自定义域名直连|直连自定义域名|TOS 支持直接|不一定要接 CDN|不需要.*CDN|不经过 CDN)",
+          "rationale": "The skill should clearly state that CDN is optional for public object URLs."
+        },
+        {
+          "name": "cdn-dcdn-are-separate",
+          "type": "matches",
+          "value": "(CDN|DCDN).*(separate|另|可选|edge|缓存|什么时候才需要)|什么时候才需要.*(CDN|DCDN)|直接.*TOS.*不.*CDN|全程走 TOS|没有 CDN 那一层|不经过 CDN",
+          "rationale": "The agent should not conflate TOS custom-domain binding with CDN/DCDN setup."
+        },
+        {
+          "name": "mentions-https-cert-binding",
+          "type": "matches",
+          "value": "(CertBound|CertId|HTTPS|证书|putBucketCustomDomain)",
+          "rationale": "HTTPS object access requires certificate binding on the TOS custom-domain rule."
+        },
+        {
+          "name": "mentions-real-object-verification",
+          "type": "matches",
+          "value": "(curl -I|openssl s_client|real object|实际对象|mp3|image)",
+          "rationale": "Verification should include real object URLs, not only root path or DNS."
+        }
+      ]
+    }
+  ]
+}

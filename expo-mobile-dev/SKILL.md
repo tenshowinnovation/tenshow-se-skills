@@ -6,7 +6,7 @@ compatibility: Designed for Claude Code and compatible agents. Requires Node.js 
 metadata:
   author: "北京腾秀创智技术有限公司 (Tenshow Innovation)"
   organization: tenshowinnovation.com
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # Expo Mobile Development
@@ -315,7 +315,7 @@ You now have:
 
 From here, default to the installed skills for specialized work:
 - Styling → `expo-tailwind-setup` skill
-- Server data → `tanstack-query` + `native-data-fetching` skills
+- Server data → `tanstack-query` + `native-data-fetching` skills; for paginated list screens, use [references/paginated-data-ui.md](references/paginated-data-ui.md)
 - Forms → `tanstack-form` skill
 - CI/CD → `expo-cicd-workflows` skill
 - Store submission → `expo-deployment` skill; for store **listing content** (titles, descriptions, screenshots, metadata), see [references/store-presence.md](references/store-presence.md)
@@ -333,7 +333,7 @@ This skill stops being the primary guide once those specialized skills have some
 
 **现象**:`pnpm run ios` / `expo run:ios` 构建失败,报错指向 `ios/<app>/AppDelegate.swift`:
 
-```
+```text
 override func sourceURL(for bridge: RCTBridge) -> URL? {
                                     ^ cannot find type 'RCTBridge' in scope
 ```
@@ -385,6 +385,7 @@ module.exports = function withRemoveRCTBridgeSourceURL(config) {
 - [references/auth.md](references/auth.md) — better-auth + international OAuth providers (Apple, Google, GitHub, email/password): provider setup, deep links, session storage, 180-day Apple client_secret rotation. References the Apple JWT generation script in `assets/`.
 - [references/china-deployment.md](references/china-deployment.md) — Full China mainland deployment guide: ICP 备案, app stores, push, WeChat/QQ login, maps, analytics, Pushy OTA
 - [references/store-presence.md](references/store-presence.md) — Store listing content & metadata: EAS Metadata for App Store Connect + Google Play (schema source of truth: https://docs.expo.dev/eas/metadata/schema/), Apple Privacy Nutrition Labels, Google Data Safety, screenshots & asset specs, plus the separate manual path for 华为 / 小米 / OPPO / vivo / 应用宝.
+- [references/paginated-data-ui.md](references/paginated-data-ui.md) — Frontend pattern for paginated mobile data: TanStack `useInfiniteQuery`, offset/limit page contracts, flattened FlashList UI, load-more guards, pull-to-refresh state, empty/footer loading states, and optimistic mutation updates across filtered infinite-query caches.
 - [references/app-config.md](references/app-config.md) — `app.config.ts` patterns for env vars, build variants, plugins
 - [references/eas-recipes.md](references/eas-recipes.md) — EAS Build/Submit/Update commands and `eas.json` templates
 
