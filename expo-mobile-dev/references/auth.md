@@ -19,6 +19,8 @@ This reference is opinionated and pragmatic. better-auth is moving fast — **al
 
 Email-based login is the international norm and is uncommon in mainland China consumer apps. Don't ship email as the primary login for China — it creates UX friction (users have to remember another credential) and friction with 实名认证 (real-name verification) flows that already key off phone number.
 
+For China listings, do not force phone-number login before the user can access basic functionality that does not legally require personal information. Add a guest / anonymous path for browsing, trial, read-only, or utility flows, then ask for phone verification only when the user crosses into account-bound, posting, payment, delivery, social, real-name, or other regulated functionality. The legal baseline is 《常见类型移动互联网应用程序必要个人信息范围规定》: App operators may not refuse basic functionality just because a user declines non-essential personal information, and several app categories list "no personal information required" for basic functionality. Source: <https://www.cac.gov.cn/2021-03/22/c_1617990997054277.htm>.
+
 Architecture:
 
 ```text
@@ -35,6 +37,54 @@ Architecture:
 ```
 
 The native app **never sees provider client_secrets**. They live on the server, which exchanges authorization codes for tokens.
+
+---
+
+## Anonymous / guest mode (REQUIRED for 中国大陆 basic functionality)
+
+For apps listed in mainland China, support a no-phone, no-email entry path for basic functionality unless the specific App category's minimum personal-information list makes phone number necessary for that function. This is not a replacement for phone-number login — it is the compliance-friendly pre-login state.
+
+Use better-auth's **`anonymous` plugin** for this. It creates an authenticated session without asking the user for email, password, OAuth, phone number, or other personally identifiable information, and the user can later link the anonymous session to a real account. Current docs: <https://better-auth.com/docs/plugins/anonymous>.
+
+### Server config
+
+```ts
+// apps/api/src/auth.ts (or server/auth.ts)
+import { betterAuth } from "better-auth";
+import { anonymous } from "better-auth/plugins";
+
+export const auth = betterAuth({
+  plugins: [
+    anonymous({
+      onLinkAccount: async ({ anonymousUser, newUser }) => {
+        // Move guest-owned rows such as drafts, cart items, local progress,
+        // or onboarding state from anonymousUser.id to newUser.id.
+      },
+      generateRandomEmail: () => `guest-${crypto.randomUUID()}@anonymous.local`,
+    }),
+  ],
+});
+```
+
+Run Better Auth's migration/generation flow after enabling the plugin so the user table has the `isAnonymous` field. Treat the generated email as an internal placeholder only; do not show it as a real user email, send email to it, or use it to satisfy contact-information requirements.
+
+### Client config
+
+```ts
+// apps/mobile/src/lib/auth-client.ts
+import { createAuthClient } from "better-auth/client";
+import { anonymousClient } from "better-auth/client/plugins";
+
+export const authClient = createAuthClient({
+  plugins: [anonymousClient()],
+});
+```
+
+```ts
+await authClient.signIn.anonymous();
+```
+
+When the user later verifies a phone number, signs in with Apple, or links WeChat / QQ / Weibo, use the plugin's `onLinkAccount` callback to migrate guest data into the permanent account. The anonymous user is deleted by default after linking; set `disableDeleteAnonymousUser` only if your product has a specific retention reason and your privacy policy covers it.
 
 ---
 
@@ -624,6 +674,7 @@ Before going live, verify each enabled provider:
 - [ ] Native client IDs (Google iOS/Android) are in `app.config.ts`
 - [ ] Deep-link scheme is configured and tested on both platforms
 - [ ] For Apple: `expo-apple-authentication` installed, `usesAppleSignIn: true` in `app.config.ts`, calendar reminder set for client_secret rotation
+- [ ] For 中国大陆 basic functionality: better-auth `anonymous` + `anonymousClient` enabled, `isAnonymous` schema migration applied, and phone login requested only when the feature legally needs account / real-name / payment / posting identity
 - [ ] For 中国大陆 phone-number login: SMS template (短信模板) + sign name (短信签名) approved by the SMS provider, SMS provider AK/SK in EAS Secrets, rate-limiting + CAPTCHA wired in front of the OTP endpoint
 - [ ] `@better-auth/i18n` configured with the locales you ship + locale resolver (Accept-Language header or stored preference)
 - [ ] All client_secrets and SMS AK/SK are in EAS Secrets / hosting provider secrets, not in source code

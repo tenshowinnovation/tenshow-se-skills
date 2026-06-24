@@ -141,6 +141,14 @@ pnpm expo install @react-native-google-signin/google-signin
 # (短信签名) — scriptable infra instead of clicking through the web console.
 # 火山引擎: the volcengine CLI; 阿里云: `aliyun dysmsapi AddSmsTemplate` etc.
 # Full phone-flow walkthrough lives in references/auth.md.
+#
+# Anonymous / guest access — REQUIRED for 中国大陆 app listings when the
+# app's basic functionality can work without collecting personal information.
+# Use better-auth's anonymous plugin (`anonymous()` on the server and
+# `anonymousClient()` on the client) so users can browse / trial / use basic
+# flows before phone verification. This is a compliance requirement under
+# 《常见类型移动互联网应用程序必要个人信息范围规定》:
+# https://www.cac.gov.cn/2021-03/22/c_1617990997054277.htm
 
 # Dev-only deps for the Apple client_secret generation script
 # (assets/generate-apple-client-secret.ts). Install these now so the script
@@ -296,6 +304,7 @@ The path is substantially different and **must be planned before launch**, not b
 - **Apple App Store China region** requires the app's content to comply with Chinese regulations; some categories (games, news, financial) need additional 版号/license.
 - **Push notifications**: do NOT use Expo's default push relay for Android (it routes through FCM). Use 极光推送 (JPush) or vendor-specific push (HMS for Huawei, MiPush for Xiaomi). iOS APNs works as normal.
 - **Primary login**: phone-number + SMS code via better-auth's `phoneNumber` plugin. Email-based login is uncommon in mainland consumer apps and creates UX friction. SMS provider: 火山引擎 SMS (primary) or 阿里云 SMS (fallback). See [references/auth.md](references/auth.md).
+- **Guest / no-PII access**: for basic functionality that does not legally require personal information, support anonymous access via better-auth's `anonymous` plugin before asking for phone verification. This is required for China listings under the necessary-personal-information rules. See [references/auth.md](references/auth.md).
 - **Social login**: WeChat (微信) login via `react-native-wechat-lib` or a dedicated config plugin. QQ login similarly. Don't ship Google login as the primary path.
 - **Maps**: 高德 (AMap) is the default choice. There's no first-party Expo module — use the community config plugin or `expo prebuild` and add the SDK manually.
 - **Analytics**: 友盟 (Umeng) is most common. If you prefer Western tooling, self-hosted PostHog or Sentry behind a China-accessible domain can work.

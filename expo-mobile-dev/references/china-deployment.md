@@ -112,6 +112,7 @@ export async function registerForPush() {
 - **QQ** — second most common after WeChat
 - **微博 (Weibo)** — relevant for content/social apps
 - **手机号验证码 (SMS code)** — this is actually the PRIMARY login method for mainland consumer apps, not a fallback. See [auth.md](auth.md) for full implementation via better-auth's `phoneNumber` plugin. Use 火山引擎 SMS (primary) or 阿里云 SMS (fallback).
+- **游客 / 匿名模式** — required for domestic listings when the app's basic functionality can work without personal information. Use better-auth's `anonymous` plugin so users can browse / trial / use basic flows before phone verification. The compliance basis is 《常见类型移动互联网应用程序必要个人信息范围规定》: <https://www.cac.gov.cn/2021-03/22/c_1617990997054277.htm>.
 
 Integration with better-auth: WeChat etc. are not in better-auth's stock provider list. Either:
 1. Use better-auth's custom OAuth provider hook to wire WeChat's OAuth flow
