@@ -63,6 +63,7 @@ DEVICE_DISPLAY_TYPE = {
     # default aliases — match the device folder names used by the rest of the skill
     "iphone": "APP_IPHONE_67",
     "ipad": "APP_IPAD_PRO_3GEN_129",
+    "ipad-landscape": "APP_IPAD_PRO_3GEN_129",
 }
 
 EDITABLE_STATES = {
@@ -233,7 +234,7 @@ def main() -> None:
         "--device",
         required=True,
         choices=sorted(DEVICE_DISPLAY_TYPE),
-        help="iphone | ipad | iphone-65 | iphone-67 | iphone-69 | ipad-129",
+        help="iphone | ipad | ipad-landscape | iphone-65 | iphone-67 | iphone-69 | ipad-129",
     )
     ap.add_argument("--dir", required=True, help="directory of *.png files (uploaded in sorted-filename order)")
     ap.add_argument(

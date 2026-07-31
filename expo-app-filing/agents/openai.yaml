@@ -1,0 +1,4 @@
+interface:
+  display_name: "Expo APP 备案"
+  short_description: "Extract EAS app filing credentials"
+  default_prompt: "Use $expo-app-filing to prepare Expo/EAS APP备案 Bundle ID, package name, public keys, and fingerprints."

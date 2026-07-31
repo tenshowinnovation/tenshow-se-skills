@@ -1,0 +1,119 @@
+{
+  "skill_name": "expo-app-store-screenshots",
+  "schema_version": 1,
+  "description": "Workflow tests for iOS preflight, simulator-only metadata overrides, deterministic landscape capture, and recovery.",
+  "assertion_types": {
+    "contains": "substring must appear in transcript (case-sensitive by default)",
+    "contains_ci": "substring must appear, case-insensitive",
+    "matches": "regex must match transcript at least once",
+    "absent": "substring must NOT appear",
+    "absent_ci": "substring must NOT appear, case-insensitive"
+  },
+  "scenarios": [
+    {
+      "id": "reuse-current-build",
+      "title": "Inspect current simulator app before rebuilding",
+      "prompt": "Please refresh our iPhone and iPad App Store screenshots. The installed Expo dev client looks current. Start by deciding whether a rebuild is actually needed.",
+      "assertions": [
+        {
+          "name": "runs-ios-preflight-first",
+          "type": "contains",
+          "value": "ios-preflight.sh",
+          "rationale": "The upgraded workflow must inspect source and installed capabilities before choosing a build."
+        },
+        {
+          "name": "mentions-direct-decision",
+          "type": "contains",
+          "value": "direct",
+          "rationale": "The agent should understand the direct capture result."
+        },
+        {
+          "name": "does-not-default-to-clean-prebuild",
+          "type": "absent",
+          "value": "prebuild --clean",
+          "rationale": "A visually current app should not trigger an unconditional clean native rebuild."
+        },
+        {
+          "name": "uses-explicit-simulator-identities",
+          "type": "matches",
+          "value": "(UDID|--udid)",
+          "rationale": "Multiple simulator work must target devices explicitly."
+        }
+      ]
+    },
+    {
+      "id": "metadata-override-candidate",
+      "title": "Source supports iPad but installed app metadata is stale",
+      "prompt": "The evaluated Expo config supports iPad and landscape, but the current dev client opens on iPad in iPhone compatibility mode and stays portrait. The native build itself is current. Prepare the fastest safe screenshot path.",
+      "assertions": [
+        {
+          "name": "recognizes-override-candidate",
+          "type": "contains",
+          "value": "simulator-override-candidate",
+          "rationale": "This is the intended metadata-only fallback case."
+        },
+        {
+          "name": "requires-current-build-confirmation",
+          "type": "contains",
+          "value": "--confirm-current-build",
+          "rationale": "The override must not hide stale native code."
+        },
+        {
+          "name": "restores-original-app",
+          "type": "matches",
+          "value": "(restore|恢复)",
+          "rationale": "Temporary simulator changes must be reverted."
+        },
+        {
+          "name": "does-not-claim-production-support",
+          "type": "matches",
+          "value": "(does not prove|不代表|不能证明).*(shipping|正式|发布|iPad)",
+          "rationale": "A patched simulator app is not evidence about the shipping binary."
+        },
+        {
+          "name": "avoids-hermes-workarounds",
+          "type": "absent_ci",
+          "value": "hermes cache",
+          "rationale": "The screenshot skill should not invent build-specific cache fixes."
+        }
+      ]
+    },
+    {
+      "id": "dynamic-landscape-recovery",
+      "title": "Dynamic iPad landscape scene with interrupted screenshot service",
+      "prompt": "Capture signed-in dynamic practice screens on iPad landscape. The page needs scrolling and a stable ready element. If the simulator shuts down during screenshot capture, continue efficiently without restarting the whole batch.",
+      "assertions": [
+        {
+          "name": "uses-capture-plan",
+          "type": "matches",
+          "value": "(capture-plan\\.json|ios-capture-set\\.sh)",
+          "rationale": "Multiple dynamic scenes should use the deterministic plan runner."
+        },
+        {
+          "name": "uses-maestro-readiness",
+          "type": "matches",
+          "value": "(Maestro|readyId|readyText|assertVisible)",
+          "rationale": "Dynamic pages must wait on UI state rather than a guessed sleep."
+        },
+        {
+          "name": "targets-landscape-size",
+          "type": "contains",
+          "value": "2752x2064",
+          "rationale": "13-inch iPad landscape output must use the accepted size."
+        },
+        {
+          "name": "recovers-only-current-scene",
+          "type": "matches",
+          "value": "(current scene|当前场景|only that scene|只.*场景)",
+          "rationale": "A Shutdown screenshot failure should not restart the full batch."
+        },
+        {
+          "name": "supports-resume",
+          "type": "contains",
+          "value": "--resume",
+          "rationale": "Validated outputs from the same plan should be resumable."
+        }
+      ]
+    }
+  ]
+}

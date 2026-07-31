@@ -1,0 +1,98 @@
+{
+  "skill_name": "expo-app-filing",
+  "schema_version": 1,
+  "description": "Workflow tests for the expo-app-filing skill. Each scenario checks that the agent follows the EAS APP filing workflow without leaking secrets or using debug credentials.",
+  "assertion_types": {
+    "contains": "substring must appear in transcript (case-sensitive by default)",
+    "contains_ci": "substring must appear, case-insensitive",
+    "matches": "regex must match transcript at least once",
+    "absent": "substring must NOT appear in transcript",
+    "absent_ci": "substring must NOT appear, case-insensitive"
+  },
+  "scenarios": [
+    {
+      "id": "extract-app-filing-features",
+      "title": "User needs APP filing public keys and fingerprints",
+      "prompt": "我的 Expo app 要做 APP备案，帮我拿 iOS 的公钥/SHA1 和安卓的公钥/MD5。项目已经用 EAS。",
+      "expected_region": "china-app-filing",
+      "assertions": [
+        {
+          "name": "uses-eas-credentials",
+          "type": "matches",
+          "value": "(eas credentials|credentials\\.json|Build Credentials)",
+          "rationale": "The skill should route through EAS build credentials."
+        },
+        {
+          "name": "mentions-ios-distribution-certificate",
+          "type": "matches",
+          "value": "(Distribution Certificate|Apple Distribution|iOS.*SHA1|SHA1.*iOS)",
+          "rationale": "iOS filing fields must come from the distribution certificate."
+        },
+        {
+          "name": "mentions-android-release-keystore",
+          "type": "matches",
+          "value": "(Android.*keystore|release keystore|MD5.*Android|Android.*MD5)",
+          "rationale": "Android filing fields must come from the release keystore."
+        },
+        {
+          "name": "avoids-debug-keystore",
+          "type": "absent",
+          "value": "debug.keystore",
+          "rationale": "Debug credentials must not be used for filing."
+        }
+      ]
+    },
+    {
+      "id": "wrong-owner-eas-project",
+      "title": "EAS project prompts under the wrong owner",
+      "prompt": "eas credentials -p ios 提示要创建 @personal/my-app，但这个项目应该在公司 org 下面。怎么办？",
+      "expected_region": "eas-owner",
+      "assertions": [
+        {
+          "name": "adds-owner-before-eas-init",
+          "type": "matches",
+          "value": "(expo\\.owner|\"owner\"|app\\.json|app\\.config)",
+          "rationale": "The skill should tell the agent to set Expo owner before accepting project creation."
+        },
+        {
+          "name": "confirms-eas-project-info",
+          "type": "matches",
+          "value": "(eas project:info|fullName|projectId|eas init)",
+          "rationale": "The agent should verify the project binding after init."
+        },
+        {
+          "name": "does-not-accept-personal-project",
+          "type": "absent_ci",
+          "value": "just accept",
+          "rationale": "The agent should not suggest accepting the wrong personal project."
+        }
+      ]
+    },
+    {
+      "id": "downloaded-credentials-run-script",
+      "title": "User downloaded EAS credentials and wants extraction",
+      "prompt": "EAS 的 credentials.json、dist-cert.p12、keystore.jks 都下载下来了。怎么一键输出备案要填的 Bundle ID、包名、公钥和指纹？",
+      "expected_region": "credential-extraction",
+      "assertions": [
+        {
+          "name": "uses-bundled-script",
+          "type": "contains",
+          "value": "scripts/extract-eas-filing-features.sh",
+          "rationale": "Downloaded credentials should be handled by the bundled extraction script."
+        },
+        {
+          "name": "prints-safe-fields",
+          "type": "matches",
+          "value": "(IOS_SHA1|ANDROID_MD5|IOS_PUBLIC_KEY|ANDROID_PUBLIC_KEY)",
+          "rationale": "The script output fields should be named clearly."
+        },
+        {
+          "name": "does-not-print-secrets",
+          "type": "matches",
+          "value": "(Never print|不要打印|不打印).*(password|private key|私钥|credentials\\.json)",
+          "rationale": "The workflow must preserve credential secrecy."
+        }
+      ]
+    }
+  ]
+}
